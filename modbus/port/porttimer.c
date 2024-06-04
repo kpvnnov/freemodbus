@@ -22,78 +22,57 @@
 /* ----------------------- Platform includes --------------------------------*/
 #include "port.h"
 
-
-
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbport.h"
 #include "stm32f0xx_hal.h"
 
-
-
 /* ----------------------- Static functions ---------------------------------*/
-static void prvvTIMERExpiredISR( void );
-
-
+static void prvvTIMERExpiredISR(void);
 
 /* ----------------------- Variables ----------------------------------------*/
-extern TIM_HandleTypeDef* modbusTimer;
+extern TIM_HandleTypeDef *modbusTimer;
 
 uint16_t timerPeriod = 0;
 uint16_t timerCounter = 0;
 
-
-
 /* ----------------------- Start implementation -----------------------------*/
 
 /*----------------------------------------------------------------------------*/
-BOOL xMBPortTimersInit(USHORT usTim1Timerout50us)
-{
-  timerPeriod = usTim1Timerout50us;
-  return TRUE;
+/* Инициализация */
+BOOL xMBPortTimersInit(USHORT usTim1Timerout50us) {
+	timerPeriod = usTim1Timerout50us;
+	return TRUE;
 }
-
-
 
 /* --------------------------------------------------------------------------*/
-inline void vMBPortTimersEnable()
-{
-  timerCounter = 0;
-  HAL_TIM_Base_Start_IT(modbusTimer);
+/* Аргументом задается период в отсчетах таймера, а этот отсчет - 50 мкс */
+inline void vMBPortTimersEnable() {
+	timerCounter = 0;
+	HAL_TIM_Base_Start_IT(modbusTimer);
 }
-
-
 
 /* --------------------------------------------------------------------------*/
-inline void vMBPortTimersDisable()
-{
-  HAL_TIM_Base_Stop_IT(modbusTimer);
+/* отключение таймера */
+inline void vMBPortTimersDisable() {
+	HAL_TIM_Base_Stop_IT(modbusTimer);
 }
-
-
 
 /* --------------------------------------------------------------------------*/
-static void prvvTIMERExpiredISR(void)
-{
-    (void)pxMBPortCBTimerExpired();
+/* обработка прерывания по переполнению */
+static void prvvTIMERExpiredISR(void) {
+	(void) pxMBPortCBTimerExpired();
 }
-
-
 
 /* --------------------------------------------------------------------------*/
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim->Instance == modbusTimer->Instance)
-  {
-    timerCounter++;
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	if (htim->Instance == modbusTimer->Instance) {
+		timerCounter++;
 
-    if (timerCounter == timerPeriod)
-    {
-      prvvTIMERExpiredISR();
-    }
-  }
+		if (timerCounter == timerPeriod) {
+			prvvTIMERExpiredISR();
+		}
+	}
 }
-
-
 
 /* --------------------------------------------------------------------------*/
