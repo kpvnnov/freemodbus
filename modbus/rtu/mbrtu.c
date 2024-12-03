@@ -32,6 +32,8 @@
 #include "string.h"
 
 /* ----------------------- Platform includes --------------------------------*/
+#include "main.h"
+#include "i2c.h"
 #include "port.h"
 
 /* ----------------------- Modbus includes ----------------------------------*/
@@ -63,6 +65,9 @@ typedef enum
     STATE_TX_IDLE,              /*!< Transmitter is in idle state. */
     STATE_TX_XMIT               /*!< Transmitter is in transfer state. */
 } eMBSndState;
+
+//конфигурация устройства в eeprom
+extern tConfig config;
 
 /* ----------------------- Static variables ---------------------------------*/
 static volatile eMBSndState eSndState;
@@ -151,6 +156,7 @@ eMBRTUReceive( UCHAR * pucRcvAddress, UCHAR ** pucFrame, USHORT * pusLength )
 {
     BOOL            xFrameReceived = FALSE;
     eMBErrorCode    eStatus = MB_ENOERR;
+    FMB_DEBUG_PRINT(DEBUG_TRACE, "eMBRTUReceive length:%d\n", usRcvBufferPos);
 
     ENTER_CRITICAL_SECTION(  );
     assert( usRcvBufferPos < MB_SER_PDU_SIZE_MAX );
@@ -175,6 +181,9 @@ eMBRTUReceive( UCHAR * pucRcvAddress, UCHAR ** pucFrame, USHORT * pusLength )
     }
     else
     {
+    FMB_DEBUG_PRINT(DEBUG_TRACE, "eMBRTUReceive MB_EIO\n");
+    FMB_DEBUG_DUMP(DEBUG_TRACE, (uint8_t* )ucRTUBuf, usRcvBufferPos);
+
         eStatus = MB_EIO;
     }
 
@@ -212,6 +221,8 @@ eMBRTUSend( UCHAR ucSlaveAddress, const UCHAR * pucFrame, USHORT usLength )
         /* Activate the transmitter. */
         eSndState = STATE_TX_XMIT;
         vMBPortSerialEnable( FALSE, TRUE );
+        FMB_DEBUG_PRINT(DEBUG_TRACE, "eMBRTUSend\n");
+
     }
     else
     {
