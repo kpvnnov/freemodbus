@@ -78,7 +78,7 @@ static peMBFrameReceive peMBFrameReceiveCur;
 static pvMBFrameClose pvMBFrameCloseCur;
 
 /* Callback functions required by the porting layer. They are called when
- * an external event has happend which includes a timeout or the reception
+ * an external event has happened which includes a timeout or the reception
  * or transmission of a character.
  */
 BOOL( *pxMBFrameCBByteReceived ) ( void );
@@ -122,11 +122,18 @@ static xMBFunctionHandler xFuncHandlers[MB_FUNC_HANDLERS_MAX] = {
 #if MB_FUNC_READ_DISCRETE_INPUTS_ENABLED > 0
     {MB_FUNC_READ_DISCRETE_INPUTS, eMBFuncReadDiscreteInputs},
 #endif
+#if MB_FUNC_WRITE_FILE_ENABLED
+    {MB_FUNC_WRITE_FILE_RECORD, eMBFuncWriteFileRecord},
+#endif
+#if MB_FUNC_READ_FILE_ENABLED
+    {MB_FUNC_READ_FILE_RECORD, eMBFuncReadFileRecord},
+#endif
 };
 
 /* ----------------------- Start implementation -----------------------------*/
 eMBErrorCode
-eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
+eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity,
+         UCHAR ucStopBits )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
 
@@ -144,6 +151,34 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eM
         {
 #if MB_RTU_ENABLED > 0
         case MB_RTU:
+#ifdef STM32_CMAKE // work around nasty gcc compiler bug
+          {
+            uint32_t* srcPtr    = NULL;
+            uint32_t* destPtr   = NULL;
+
+            __asm__ volatile ("ldr %0, =eMBRTUStart"    : "=r" (pvMBFrameStartCur));
+            __asm__ volatile ("ldr %0, =eMBRTUStop"     : "=r" (pvMBFrameStopCur));
+            __asm__ volatile ("ldr %0, =eMBRTUSend"     : "=r" (peMBFrameSendCur));
+            __asm__ volatile ("ldr %0, =eMBRTUReceive"  : "=r" (peMBFrameReceiveCur));
+            
+            pvMBFrameCloseCur   = NULL;
+
+            // Assign pxMBFrameCBByteReceived
+            __asm__ volatile ("ldr %0, =xMBRTUReceiveFSM"        : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBFrameCBByteReceived" : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+
+            // Assign pxMBFrameCBTransmitterEmpty
+            __asm__ volatile ("ldr %0, =xMBRTUTransmitFSM"           : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBFrameCBTransmitterEmpty" : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+
+            // Assign pxMBPortCBTimerExpired
+            __asm__ volatile ("ldr %0, =xMBRTUTimerT35Expired"  : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBPortCBTimerExpired" : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+          }
+#else
             pvMBFrameStartCur = eMBRTUStart;
             pvMBFrameStopCur = eMBRTUStop;
             peMBFrameSendCur = eMBRTUSend;
@@ -152,12 +187,40 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eM
             pxMBFrameCBByteReceived = xMBRTUReceiveFSM;
             pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM;
             pxMBPortCBTimerExpired = xMBRTUTimerT35Expired;
-
-            eStatus = eMBRTUInit( ucMBAddress, ucPort, ulBaudRate, eParity );
+#endif
+            eStatus = eMBRTUInit( ucMBAddress, ucPort, ulBaudRate, eParity, ucStopBits );
             break;
 #endif
 #if MB_ASCII_ENABLED > 0
         case MB_ASCII:
+#ifdef STM32_CMAKE // work around nasty gcc compiler bug
+          {
+            uint32_t* srcPtr  = NULL;
+            uint32_t* destPtr = NULL;
+
+            __asm__ volatile ("ldr %0, =eMBASCIIStart"   : "=r" (pvMBFrameStartCur));
+            __asm__ volatile ("ldr %0, =eMBASCIIStop"    : "=r" (pvMBFrameStopCur));
+            __asm__ volatile ("ldr %0, =eMBASCIISend"    : "=r" (peMBFrameSendCur));
+            __asm__ volatile ("ldr %0, =eMBASCIIReceive" : "=r" (peMBFrameReceiveCur));
+            
+            pvMBFrameCloseCur = NULL;
+
+            // Assign pxMBFrameCBByteReceived
+            __asm__ volatile ("ldr %0, =xMBASCIIReceiveFSM"      : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBFrameCBByteReceived" : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+
+            // Assign pxMBFrameCBTransmitterEmpty
+            __asm__ volatile ("ldr %0, =xMBASCIITransmitFSM"         : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBFrameCBTransmitterEmpty" : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+
+            // Assign pxMBPortCBTimerExpired
+            __asm__ volatile ("ldr %0, =xMBASCIITimerT1SExpired" : "=r" (srcPtr));
+            __asm__ volatile ("ldr %0, =pxMBPortCBTimerExpired"  : "=r" (destPtr));
+            *destPtr = (uint32_t)srcPtr;
+          }
+#else
             pvMBFrameStartCur = eMBASCIIStart;
             pvMBFrameStopCur = eMBASCIIStop;
             peMBFrameSendCur = eMBASCIISend;
@@ -166,8 +229,8 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eM
             pxMBFrameCBByteReceived = xMBASCIIReceiveFSM;
             pxMBFrameCBTransmitterEmpty = xMBASCIITransmitFSM;
             pxMBPortCBTimerExpired = xMBASCIITimerT1SExpired;
-
-            eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, eParity );
+#endif
+            eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, eParity, ucStopBits );
             break;
 #endif
         default:
@@ -395,10 +458,17 @@ eMBPoll( void )
                     ucMBFrame[usLength++] = ( UCHAR )( ucFunctionCode | MB_FUNC_ERROR );
                     ucMBFrame[usLength++] = eException;
                 }
+#if MB_ASCII_ENABLED > 0
                 if( ( eMBCurrentMode == MB_ASCII ) && MB_ASCII_TIMEOUT_WAIT_BEFORE_SEND_MS )
                 {
                     vMBPortTimersDelay( MB_ASCII_TIMEOUT_WAIT_BEFORE_SEND_MS );
                 }                
+#elif MB_RTU_ENABLED > 0
+                if ( ( eMBCurrentMode == MB_RTU ) && MB_RTU_TIMEOUT_WAIT_BEFORE_SEND_MS )
+                {
+                    vMBPortTimersDelay( MB_RTU_TIMEOUT_WAIT_BEFORE_SEND_MS );
+                }
+#endif
                 eStatus = peMBFrameSendCur( ucMBAddress, ucMBFrame, usLength );
             }
             break;
@@ -407,5 +477,5 @@ eMBPoll( void )
             break;
         }
     }
-    return MB_ENOERR;
+    return eStatus;
 }

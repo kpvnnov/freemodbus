@@ -138,6 +138,7 @@ typedef enum
  * \param ulBaudRate The baudrate. E.g. 19200. Supported baudrates depend
  *   on the porting layer.
  * \param eParity Parity used for serial transmission.
+ * \param ucStopBits Number of stop bits for serial transmission.
  *
  * \return If no error occurs the function returns eMBErrorCode::MB_ENOERR.
  *   The protocol is then in the disabled state and ready for activation
@@ -148,7 +149,8 @@ typedef enum
  *    - eMBErrorCode::MB_EPORTERR IF the porting layer returned an error.
  */
 eMBErrorCode    eMBInit( eMBMode eMode, UCHAR ucSlaveAddress,
-                         UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity );
+                         UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity,
+                         UCHAR ucStopBits );
 
 /*! \ingroup modbus
  * \brief Initialize the Modbus protocol stack for Modbus TCP.
@@ -409,6 +411,43 @@ eMBErrorCode    eMBRegCoilsCB( UCHAR * pucRegBuffer, USHORT usAddress,
  */
 eMBErrorCode    eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress,
                                   USHORT usNDiscrete );
+
+/*! \ingroup modbus_registers
+ * \brief Callback function used if a <em>Read/Write File Record</em> value is
+ *   read by the protocol stack.
+ *
+ * If you are going to use his function you might use the functions
+ * xMBUtilSetBits(  ) and xMBUtilGetBits(  ) for working with bitfields.
+ *
+ * \param pucFileBuffer The buffer should be updated with the current
+ *   file bytes for usFileNumber. The starting offset at \c usRecordNumber must
+ *   be stored at the LSB of the first byte in the buffer. If the requested
+ *   number is not a multiple of eight the remaining bits should be set to zero.
+ * \param usFileNumber The index of the file in question.
+ * \param usRecordNumber The starting offset address of the file to write to,
+ *   specified in multiples of 16-bits
+ * \param usRecordLength Number of UInt16 to read/write.
+ * \param eMode If eMBRegisterMode::MB_REG_WRITE the application values should
+ *   be updated from the values supplied in the buffer \c pucFileBuffer.
+ *   If eMBRegisterMode::MB_REG_READ the application should store the current
+ *   values in the buffer \c pucFileBuffer.
+ 
+ * \return The function must return one of the following error codes:
+ *   - eMBErrorCode::MB_ENOERR If no error occurred. In this case a normal
+ *       Modbus response is sent.
+ *   - eMBErrorCode::MB_ENOREG If no such file or out-of-bounds request.
+ *       In this case a <b>ILLEGAL DATA ADDRESS</b> exception frame is sent 
+ *       as a response.
+ *   - eMBErrorCode::MB_ETIMEDOUT If the requested register block is
+ *       currently not available and the application dependent response
+ *       timeout would be violated. In this case a <b>SLAVE DEVICE BUSY</b>
+ *       exception is sent as a response.
+ *   - eMBErrorCode::MB_EIO If an unrecoverable error occurred. In this case
+ *       a <b>SLAVE DEVICE FAILURE</b> exception is sent as a response.
+ */
+eMBErrorCode    eMBRegFileCB( UCHAR * pucFileBuffer, USHORT usFileNumber,
+                              USHORT usRecordNumber, USHORT usRecordLength,
+							  eMBRegisterMode eMode );
 
 #ifdef __cplusplus
 PR_END_EXTERN_C

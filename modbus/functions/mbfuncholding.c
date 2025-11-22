@@ -128,7 +128,8 @@ eMBFuncWriteMultipleHoldingRegister( UCHAR * pucFrame, USHORT * usLen )
 
         if( ( usRegCount >= 1 ) &&
             ( usRegCount <= MB_PDU_FUNC_WRITE_MUL_REGCNT_MAX ) &&
-            ( ucRegByteCount == ( UCHAR ) ( 2 * usRegCount ) ) )
+            ( ucRegByteCount == ( UCHAR ) ( 2 * usRegCount ) ) &&
+            ( ucRegByteCount == ( UCHAR ) ( *usLen - MB_PDU_SIZE_MIN - MB_PDU_FUNC_WRITE_MUL_SIZE_MIN ) ) )
         {
             /* Make callback to update the register values. */
             eRegStatus =
@@ -177,12 +178,12 @@ eMBFuncReadHoldingRegister( UCHAR * pucFrame, USHORT * usLen )
 
     if( *usLen == ( MB_PDU_FUNC_READ_SIZE + MB_PDU_SIZE_MIN ) )
     {
-        usRegAddress = ( USHORT )( pucFrame[MB_PDU_FUNC_READ_ADDR_OFF] << 8 );
+        usRegAddress  = ( USHORT )( pucFrame[MB_PDU_FUNC_READ_ADDR_OFF] << 8 );
         usRegAddress |= ( USHORT )( pucFrame[MB_PDU_FUNC_READ_ADDR_OFF + 1] );
         usRegAddress++;
 
-        usRegCount = ( USHORT )( pucFrame[MB_PDU_FUNC_READ_REGCNT_OFF] << 8 );
-        usRegCount = ( USHORT )( pucFrame[MB_PDU_FUNC_READ_REGCNT_OFF + 1] );
+        usRegCount  = ( USHORT )( pucFrame[MB_PDU_FUNC_READ_REGCNT_OFF] << 8 );
+        usRegCount |= ( USHORT )( pucFrame[MB_PDU_FUNC_READ_REGCNT_OFF + 1] );
 
         /* Check if the number of registers to read is valid. If not
          * return Modbus illegal data value exception. 

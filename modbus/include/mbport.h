@@ -30,6 +30,8 @@
 #ifndef _MB_PORT_H
 #define _MB_PORT_H
 
+#include "port.h"
+
 #ifdef __cplusplus
 PR_BEGIN_EXTERN_C
 #endif
@@ -68,7 +70,8 @@ BOOL            xMBPortEventGet(  /*@out@ */ eMBEventType * eEvent );
 /* ----------------------- Serial port functions ----------------------------*/
 
 BOOL            xMBPortSerialInit( UCHAR ucPort, ULONG ulBaudRate,
-                                   UCHAR ucDataBits, eMBParity eParity );
+                                   UCHAR ucDataBits, eMBParity eParity,
+                                   UCHAR ucStopBits );
 
 void            vMBPortClose( void );
 
