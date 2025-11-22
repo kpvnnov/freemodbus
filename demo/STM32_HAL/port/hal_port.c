@@ -15,8 +15,8 @@
 
 /* Declarations and definitions ----------------------------------------------*/
 static uint32_t PriMsk;
-UART_HandleTypeDef* modbusUart;
-TIM_HandleTypeDef* modbusTimer;
+UART_HandleTypeDef* uart_mb;
+TIM_HandleTypeDef*  timer_mb;
 
 /* Functions -----------------------------------------------------------------*/
 void EnterCriticalSection()
@@ -34,13 +34,13 @@ void ExitCriticalSection()
 /*----------------------------------------------------------------------------*/
 void HAL_PORT_SetTimerModule(TIM_HandleTypeDef* timer)
 {
-    modbusTimer = timer;
+    uart_mb = timer;
 }
 
 /*----------------------------------------------------------------------------*/
 void HAL_PORT_SetUartModule(UART_HandleTypeDef* uart)
 {
-    modbusUart = uart;
+    uart_mb = uart;
 }
 
 /*----------------------------------------------------------------------------*/

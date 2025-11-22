@@ -9,8 +9,8 @@
  ******************************************************************************
  */
 
-#ifndef HAL_PORT_H
-#define HAL_PORT_H
+#ifndef __STM32_HAL_PORT_H
+#define __STM32_HAL_PORT_H
 
 #ifndef __HAL_ENTER_CRITICAL_SECTION
 #define __HAL_ENTER_CRITICAL_SECTION()                                                                                 \
@@ -25,17 +25,17 @@
 /* Includes ------------------------------------------------------------------*/
 
 /* Detect STM32 family and include appropriate HAL */
-#if defined(STM32F0)
+#if defined(STM32F0xx)
   #include "stm32f0xx_hal.h"
-#elif defined(STM32F1)
+#elif defined(STM32F1xx)
   #include "stm32f1xx_hal.h"
-#elif defined(STM32F3)
+#elif defined(STM32F3xx)
   #include "stm32f3xx_hal.h"
-#elif defined(STM32G4)
+#elif defined(STM32G4xx)
   #include "stm32g4xx_hal.h"
-#elif defined(STM32F4)
+#elif defined(STM32F4xx)
   #include "stm32f4xx_hal.h"
-#elif defined(STM32WL)
+#elif defined(STM32WLxx)
   #include "stm32wlxx_hal.h"
 /* Add other STM32 families as needed */
 #else
@@ -48,5 +48,8 @@
 
 extern void HAL_PORT_SetTimerModule(TIM_HandleTypeDef *timer);
 extern void HAL_PORT_SetUartModule(UART_HandleTypeDef *uart);
+extern void UART_RxCplt(UART_HandleTypeDef* huart);
+extern void UART_TxCplt(UART_HandleTypeDef* huart);
+extern void Timer_PeriodElapsed(TIM_HandleTypeDef *htim);
 
 #endif // #ifndef HAL_PORT_H

@@ -41,6 +41,7 @@ uint16_t timerCounter = 0;
 BOOL xMBPortTimersInit(USHORT usTim1Timerout50us)
 {
   timerPeriod = usTim1Timerout50us;
+  HAL_TIM_RegisterCallback(&timer_mb, HAL_TIM_PERIOD_ELAPSED_CB_ID, Timer_PeriodElapsed);
   return TRUE;
 }
 
@@ -64,17 +65,14 @@ static inline void prvvTIMERExpiredISR(void)
 }
 
 /* --------------------------------------------------------------------------*/
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void Timer_PeriodElapsed(TIM_HandleTypeDef *htim)
 {
-  if (htim->Instance == modbusTimer->Instance)
-  {
     timerCounter++;
 
     if (timerCounter == timerPeriod)
     {
       prvvTIMERExpiredISR();
     }
-  }
 }
 
 /* --------------------------------------------------------------------------*/
