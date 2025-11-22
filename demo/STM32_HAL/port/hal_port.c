@@ -34,7 +34,7 @@ void ExitCriticalSection()
 /*----------------------------------------------------------------------------*/
 void HAL_PORT_SetTimerModule(TIM_HandleTypeDef* timer)
 {
-    uart_mb = timer;
+    timer_mb = timer;
 }
 
 /*----------------------------------------------------------------------------*/

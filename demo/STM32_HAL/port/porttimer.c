@@ -30,7 +30,7 @@
 static void prvvTIMERExpiredISR(void);
 
 /* ----------------------- Variables ----------------------------------------*/
-extern TIM_HandleTypeDef *modbusTimer;
+extern TIM_HandleTypeDef *timer_mb;
 
 uint16_t timerPeriod = 0;
 uint16_t timerCounter = 0;
@@ -41,7 +41,7 @@ uint16_t timerCounter = 0;
 BOOL xMBPortTimersInit(USHORT usTim1Timerout50us)
 {
   timerPeriod = usTim1Timerout50us;
-  HAL_TIM_RegisterCallback(&timer_mb, HAL_TIM_PERIOD_ELAPSED_CB_ID, Timer_PeriodElapsed);
+  HAL_TIM_RegisterCallback(timer_mb, HAL_TIM_PERIOD_ELAPSED_CB_ID, Timer_PeriodElapsed);
   return TRUE;
 }
 
@@ -49,13 +49,13 @@ BOOL xMBPortTimersInit(USHORT usTim1Timerout50us)
 inline void vMBPortTimersEnable()
 {
   timerCounter = 0;
-  HAL_TIM_Base_Start_IT(modbusTimer);
+  HAL_TIM_Base_Start_IT(timer_mb);
 }
 
 /* --------------------------------------------------------------------------*/
 inline void vMBPortTimersDisable()
 {
-  HAL_TIM_Base_Stop_IT(modbusTimer);
+  HAL_TIM_Base_Stop_IT(timer_mb);
 }
 
 /* --------------------------------------------------------------------------*/

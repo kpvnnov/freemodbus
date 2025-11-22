@@ -19,8 +19,8 @@
  * File: $Id$
  */
 
-#ifndef _PORT_H
-#define _PORT_H
+#ifndef _MB_STM32_HAL_PORT_H
+#define _MB_STM32_HAL_PORT_H
 
 #include <assert.h>
 #include <inttypes.h>
@@ -54,4 +54,4 @@ typedef int32_t LONG;
 #define FALSE           0
 #endif
 
-#endif
+#endif //_MB_STM32_HAL_PORT_H
