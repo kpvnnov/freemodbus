@@ -44,23 +44,37 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 {
     if ( xRxEnable == FALSE )
     {
-        HAL_UART_AbortReceive_IT( uart_mb );
+        MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSE stop receive\n" );
+        if ( HAL_UART_AbortReceive_IT( uart_mb ) != HAL_OK )
+        {
+            MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortSE error abort receive\n" );
+        }
     }
     else
     {
         SetRS485ReceiveMode();
-        HAL_UART_Receive_IT( uart_mb, &rxByte, 1 );
+        MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSE start receive\n" );
+        if ( HAL_UART_Receive_IT( uart_mb, &rxByte, 1 ) != HAL_OK )
+        {
+            MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortSE error uart receive\n" );
+        }
     }
 
     if ( xTxEnable == FALSE )
     {
-        HAL_UART_AbortTransmit_IT( uart_mb );
+        MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSE stop transmit\n" );
+        if ( HAL_UART_AbortTransmit_IT( uart_mb ) != HAL_OK )
+        {
+            MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortSE error abort transmit\n" );
+        }
     }
     else
     {
+        MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSE check start transmit\n" );
         if ( uart_mb->gState == HAL_UART_STATE_READY )
         {
             SetRS485TransmitMode();
+            MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSE begin start transmit\n" );
             prvvUARTTxReadyISR();
         }
     }
@@ -107,7 +121,6 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBPar
             //uart_mb->Init.WordLength = UART_WORDLENGTH_7B;
             //uart_mb->Init.Parity = UART_PARITY_NONE;
             return FALSE;    // Unsupported data bits configuration
-
         }
         else
         {
@@ -125,9 +138,6 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBPar
         return FALSE;    // UART initialization failed
     }
 
-    // Disable RX and TX interrupts initially
-    __HAL_UART_DISABLE_IT( uart_mb, UART_IT_RXNE );
-    __HAL_UART_DISABLE_IT( uart_mb, UART_IT_TXE );
     HAL_UART_RegisterCallback( uart_mb, HAL_UART_TX_COMPLETE_CB_ID, UART_TxCplt );
     HAL_UART_RegisterCallback( uart_mb, HAL_UART_RX_COMPLETE_CB_ID, UART_RxCplt );
 
@@ -138,7 +148,11 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBPar
 BOOL xMBPortSerialPutByte( CHAR ucByte )
 {
     txByte = ucByte;
-    HAL_UART_Transmit_IT( uart_mb, &txByte, 1 );
+    MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSPB start uart transmit %02x\n", txByte );
+    if ( HAL_UART_Transmit_IT( uart_mb, &txByte, 1 ) != HAL_OK )
+    {
+        MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortSPB ERROR uart transmit\n" );
+    }
     return TRUE;
 }
 
@@ -146,31 +160,39 @@ BOOL xMBPortSerialPutByte( CHAR ucByte )
 BOOL xMBPortSerialGetByte( CHAR* pucByte )
 {
     *pucByte = rxByte;
-    HAL_UART_Receive_IT( uart_mb, &rxByte, 1 );
+    MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortSGB uart get byte %02x and start receive next\n", rxByte );
+    if ( HAL_UART_Receive_IT( uart_mb, &rxByte, 1 ) != HAL_OK )
+    {
+        MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortSGB error uart receive\n" );
+    }
     return TRUE;
 }
 
 /* --------------------------------------------------------------------------*/
 static void prvvUARTTxReadyISR( void )
 {
+    MP_DEBUG_PRINT( DEBUG_TRACE, "prvvUARTTxReadyISR\n" );
     pxMBFrameCBTransmitterEmpty();
 }
 
 /* --------------------------------------------------------------------------*/
 static void prvvUARTRxISR( void )
 {
+    MP_DEBUG_PRINT( DEBUG_TRACE, "prvvUARTRxISR\n" );
     pxMBFrameCBByteReceived();
 }
 
 /* --------------------------------------------------------------------------*/
 void UART_TxCplt( UART_HandleTypeDef* huart )
 {
+    MP_DEBUG_PRINT( DEBUG_TRACE, "prvvUARTTxReadyISR\n" );
     prvvUARTTxReadyISR();
 }
 
 /* --------------------------------------------------------------------------*/
 void UART_RxCplt( UART_HandleTypeDef* huart )
 {
+    MP_DEBUG_PRINT( DEBUG_TRACE, "%ld uart in:%02x\n", HAL_GetTick(), rxByte );
     prvvUARTRxISR();
 }
 

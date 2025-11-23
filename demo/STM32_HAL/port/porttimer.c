@@ -23,14 +23,14 @@
 #include "port.h"
 
 /* ----------------------- Modbus includes ----------------------------------*/
+#include "hal_port.h"
 #include "mb.h"
 #include "mbport.h"
-#include "hal_port.h"
 /* ----------------------- Static functions ---------------------------------*/
-static void prvvTIMERExpiredISR(void);
+static void prvvTIMERExpiredISR( void );
 
 /* ----------------------- Variables ----------------------------------------*/
-extern TIM_HandleTypeDef *timer_mb;
+extern TIM_HandleTypeDef* timer_mb;
 
 uint16_t timerPeriod = 0;
 uint16_t timerCounter = 0;
@@ -38,40 +38,55 @@ uint16_t timerCounter = 0;
 /* ----------------------- Start implementation -----------------------------*/
 
 /*----------------------------------------------------------------------------*/
-BOOL xMBPortTimersInit(USHORT usTim1Timerout50us)
+BOOL xMBPortTimersInit( USHORT usTim1Timerout50us )
 {
-  timerPeriod = usTim1Timerout50us;
-  HAL_TIM_RegisterCallback(timer_mb, HAL_TIM_PERIOD_ELAPSED_CB_ID, Timer_PeriodElapsed);
-  return TRUE;
+    timerPeriod = usTim1Timerout50us;
+    MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortTI timer init\n" );
+
+    if ( HAL_TIM_RegisterCallback( timer_mb, HAL_TIM_PERIOD_ELAPSED_CB_ID, Timer_PeriodElapsed ) != HAL_OK )
+    {
+        MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortTI ERROR reg callback\n" );
+    }
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------*/
 inline void vMBPortTimersEnable()
 {
-  timerCounter = 0;
-  HAL_TIM_Base_Start_IT(timer_mb);
+    timerCounter = 0;
+    MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortTE timer start\n" );
+
+    if ( HAL_TIM_Base_Start_IT( timer_mb ) != HAL_OK )
+    {
+        MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortTE ERROR timer start\n" );
+    }
 }
 
 /* --------------------------------------------------------------------------*/
 inline void vMBPortTimersDisable()
 {
-  HAL_TIM_Base_Stop_IT(timer_mb);
+    MP_DEBUG_PRINT( DEBUG_TRACE, "MBPortTD timer stop\n" );
+    if ( HAL_TIM_Base_Stop_IT( timer_mb ) != HAL_OK )
+    {
+        MP_DEBUG_PRINT( DEBUG_ERROR, "MBPortTD ERROR timer stop\n" );
+    }
 }
 
 /* --------------------------------------------------------------------------*/
-static inline void prvvTIMERExpiredISR(void)
+static inline void prvvTIMERExpiredISR( void )
 {
-  (void)pxMBPortCBTimerExpired();
+    (void) pxMBPortCBTimerExpired();
 }
 
 /* --------------------------------------------------------------------------*/
-void Timer_PeriodElapsed(TIM_HandleTypeDef *htim)
+void Timer_PeriodElapsed( TIM_HandleTypeDef* htim )
 {
     timerCounter++;
 
-    if (timerCounter == timerPeriod)
+    if ( timerCounter == timerPeriod )
     {
-      prvvTIMERExpiredISR();
+        MP_DEBUG_PRINT( DEBUG_TRACE, "%ld timer expired\n", HAL_GetTick() );
+        prvvTIMERExpiredISR();
     }
 }
 
